@@ -27,7 +27,11 @@
     [['l', 'right'], expand],
     ['^', cursorFirst],
     ['$', cursorLast],
-    ['g', navigate],
+    ['g', navigateTo('top')],
+    ['P', navigateTo('projects')],
+    ['B', navigateTo('labels')],
+    ['I', navigateTo('filters')],
+
 
     // Manipulation of tasks at cursor
     ['enter', edit],
@@ -428,18 +432,30 @@
 
   // Switches to a navigation mode, where navigation targets are annotated
   // with letters to press to click.
-  function navigate() {
-    withId('projects_list', function(projectsUl) {
-      // Since the projects list can get reconstructed, watch for changes and
-      // reconstruct the shortcut tips.  A function to unregister the mutation
-      // observer is passed in.
-      oldNavigateOptions = [];
-      var finished = function() {};
-      finished = registerMutationObserver(projectsUl, function() {
-        setupNavigate(projectsUl, finished);
-      }, { childList: true, subtree: true });
-      setupNavigate(projectsUl, finished);
-    });
+  // Generates a function that goes exactly where it should
+  function navigateTo(where) {
+    return function() {
+      var listid = '';
+      if (where === 'top') {
+        listid = 'top_filters';
+      } else {
+        var td = getUniqueClass(document, 'control ' + where, all, click);
+        if (td)
+          click(td);
+        listid = where + '_list';
+      }
+      withId(listid, function(Ul) {
+        // Since the projects list can get reconstructed, watch for changes and
+        // reconstruct the shortcut tips.  A function to unregister the mutation
+        // observer is passed in.
+        oldNavigateOptions = [];
+        var finished = function() {};
+        finished = registerMutationObserver(Ul, function() {
+          setupNavigate(Ul, finished);
+        }, { childList: true, subtree: true });
+        setupNavigate(Ul, finished);
+      });
+    };
   }
 
   // Clicks quick add task button.  Would be better to use todoist's builtin
@@ -1252,11 +1268,7 @@
     try {
       // Jump keys optimized to be close to homerow.
       var jumpkeys = Array.from('asdfghjkl' + 'qwertyuiop' + 'zxcvbnm' + '123467890');
-      var options = {
-        'i': maybeParent(getUniqueClass(document, 'cmp_filter_inbox', all, click)),
-        't': maybeParent(getUniqueClass(document, 'cmp_filter_today', all, click)),
-        'n': maybeParent(getUniqueClass(document, 'cmp_filter_days', all, click))
-      };
+      var options = { };
       withTag(projectsUl, 'li', function(projectLi) {
         if (notHidden(projectLi)) {
           var key = null;
